@@ -17,12 +17,9 @@ An intelligent expense management platform that simplifies claim submission, aut
 
 ## 🌐 Live Demo
 
-🔗 Frontend: **https://helix-lite-expense-system.vercel.app/**
+🔗 Live website: **https://helix-lite-expense-system.vercel.app/**
 
-🔗 Backend API: **https://helix-lite-expense-system.onrender.com**
-
-🎥 Project Walkthrough: <video src="./demo/helix-demo.mp4" controls width="100%"></video>
-
+🎥 **Project Walkthrough:** https://drive.google.com/file/d/1ND47sFr1dbDjseOObFOSl9_ujU8BWdXN/view?usp=drive_link
 ---
 
 # 📖 Project Overview
