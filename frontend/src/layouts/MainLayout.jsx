@@ -14,8 +14,8 @@ export default function MainLayout() {
   ];
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
-      <aside className="w-64 bg-[#0B132B] text-white flex flex-col shadow-2xl z-20">
+    <div className="flex flex-col md:flex-row h-screen bg-slate-50 font-sans">
+      <aside className="w-full md:w-64 bg-[#0B132B] text-white flex flex-col md:shadow-2xl z-20">
         <div className="p-6 flex items-center gap-3 border-b border-gray-800 cursor-pointer" onClick={() => navigate('/')}>
           <div className="bg-blue-600 p-2 rounded-lg">
             <Receipt className="w-6 h-6 text-white" />
@@ -23,7 +23,7 @@ export default function MainLayout() {
           <h1 className="text-xl font-bold tracking-wide">Helix<span className="text-blue-400">Lite</span></h1>
         </div>
         
-        <nav className="flex-1 py-6 px-3 space-y-2">
+        <nav className="flex md:flex-col overflow-x-auto py-4 md:py-6 px-3 gap-2 space-y-0 md:space-y-2">
           {navItems.map((item) => (
             <NavLink
               key={item.name}

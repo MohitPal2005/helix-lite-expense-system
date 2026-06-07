@@ -39,7 +39,7 @@ export default function ExpenseList({ expenses, onStatusChange }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden overflow-x-auto">
       <table className="min-w-full text-left">
         <thead className="bg-gray-50 border-b">
           <tr>
