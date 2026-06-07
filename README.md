@@ -21,7 +21,7 @@ An intelligent expense management platform that simplifies claim submission, aut
 
 🔗 Backend API: **https://helix-lite-expense-system.onrender.com**
 
-🎥 Project Walkthrough: **[Add Video Link]**
+🎥 Project Walkthrough: <video src="./demo/HelixLite_ AI-Powered Full-Stack Expense Management Demo.mp4" controls width="100%"></video>
 
 ---
 
