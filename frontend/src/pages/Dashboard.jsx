@@ -11,27 +11,32 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/expenses`)
-      .then(res => res.json())
-      .then(data => {
-        setExpenses(data);
-        setLoading(false);
-      })
-      .catch(err => console.error("Could not load expenses", err));
-  }, []);
+    if (user) {
+      
+      fetch(`${import.meta.env.VITE_API_URL}/expenses?user_id=${user.email}`)
+        .then(res => res.json())
+        .then(data => {
+          setExpenses(Array.isArray(data) ? data : []);
+          setLoading(false);
+        })
+        .catch(err => console.error("Could not load expenses", err));
+    } else {
+      const guestData = JSON.parse(localStorage.getItem('guest_expenses') || '[]');
+      setExpenses(guestData);
+      setLoading(false);
+    }
+  }, [user]); 
 
-  // Calculate Real Data Metrics
-  const totalSpend = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalSpend = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
   const pendingCount = expenses.filter(exp => exp.status === 'Draft' || exp.status === 'Submitted').length;
-  const approvedValue = expenses.filter(exp => exp.status === 'Approved').reduce((sum, exp) => sum + exp.amount, 0);
+  const approvedValue = expenses.filter(exp => exp.status === 'Approved').reduce((sum, exp) => sum + Number(exp.amount), 0);
 
-  // Group data by category for charts
   const categoryData = expenses.reduce((acc, exp) => {
     const existing = acc.find(item => item.name === exp.category);
     if (existing) {
-      existing.amount += exp.amount;
+      existing.amount += Number(exp.amount);
     } else {
-      acc.push({ name: exp.category, amount: exp.amount });
+      acc.push({ name: exp.category, amount: Number(exp.amount) });
     }
     return acc;
   }, []);
@@ -41,7 +46,6 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-fade-in">
       
-      {/* Real User Greeting */}
       <div className="mb-6">
         {user ? (
           <>
@@ -51,12 +55,11 @@ export default function Dashboard() {
         ) : (
           <>
             <h1 className="text-3xl font-bold text-gray-900">General Overview (Demo Mode)</h1>
-            <p className="text-gray-500 mt-1">Please Sign In to view your actual company data.</p>
+            <p className="text-gray-500 mt-1">Please Sign In to view and save your actual company data.</p>
           </>
         )}
       </div>
 
-      {/* Floating Data Widgets (Real Data) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
           <div className="flex items-center gap-4">
@@ -87,7 +90,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Charts Section (Real Data) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold text-gray-800 mb-6">Spend by Category</h3>

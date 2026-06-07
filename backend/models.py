@@ -5,6 +5,7 @@ db = SQLAlchemy()
 
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(100), nullable=False)
     date = db.Column(db.String(50), nullable=False)
     category = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
@@ -15,6 +16,7 @@ class Expense(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'date': self.date,
             'category': self.category,
             'amount': self.amount,

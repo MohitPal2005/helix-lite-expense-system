@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
 import { Mic, Disc3, UploadCloud, FileText, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function ExpenseForm({ onExpenseAdded }) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     date: '',
     category: 'Travel',
@@ -14,7 +16,6 @@ export default function ExpenseForm({ onExpenseAdded }) {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState('');
   
-  // New States for Drag & Drop
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
 
@@ -22,7 +23,6 @@ export default function ExpenseForm({ onExpenseAdded }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // --- Drag & Drop Handlers ---
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -49,12 +49,8 @@ export default function ExpenseForm({ onExpenseAdded }) {
     }
   };
 
-  const removeFile = () => {
-    setFile(null);
-  };
-  // -----------------------------
+  const removeFile = () => setFile(null);
 
-  // Stable Web Speech API Logic
   const toggleListening = () => {
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
@@ -70,7 +66,6 @@ export default function ExpenseForm({ onExpenseAdded }) {
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
     
-    // Set to false for maximum stability (waits until you finish speaking)
     recognition.continuous = false; 
     recognition.interimResults = false; 
     recognition.lang = 'en-US';
@@ -78,11 +73,10 @@ export default function ExpenseForm({ onExpenseAdded }) {
     recognition.onstart = () => {
       setIsListening(true);
       setError('');
-      setAiText(''); // Clear text for the new recording
+      setAiText(''); 
     };
     
     recognition.onresult = (event) => {
-      // Safely grab the final transcript once you finish speaking
       const transcript = event.results[0][0].transcript;
       setAiText(transcript);
     };
@@ -146,22 +140,42 @@ export default function ExpenseForm({ onExpenseAdded }) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/expenses`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+      if (user) {
+        // --- LOGGED IN USER: Save to Database ---
+        const payload = { ...formData, user_id: user.email }; // Attach the user identity
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/expenses`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-      if (response.ok) {
-        const newExpense = await response.json();
-        onExpenseAdded(newExpense);
-        setFormData({ date: '', category: 'Travel', amount: '', description: '' });
-        setFile(null); // Clear the file after successful submission
+        if (response.ok) {
+          const newExpense = await response.json();
+          if (onExpenseAdded) onExpenseAdded(newExpense);
+          setFormData({ date: '', category: 'Travel', amount: '', description: '' });
+          setFile(null); 
+        } else {
+          setError('Failed to submit expense to server.');
+        }
       } else {
-        setError('Failed to submit expense.');
+        // --- GUEST USER: Save to LocalStorage ---
+        const guestExpenses = JSON.parse(localStorage.getItem('guest_expenses') || '[]');
+        const newExpense = {
+          ...formData,
+          amount: parseFloat(formData.amount),
+          id: Date.now(), // Generate a fake ID
+          status: 'Draft',
+          created_at: new Date().toISOString()
+        };
+        guestExpenses.push(newExpense);
+        localStorage.setItem('guest_expenses', JSON.stringify(guestExpenses));
+        
+        if (onExpenseAdded) onExpenseAdded(newExpense);
+        setFormData({ date: '', category: 'Travel', amount: '', description: '' });
+        setFile(null); 
       }
     } catch (err) {
-      setError('Server error. Is the Flask backend running?');
+      setError('An error occurred while saving the expense.');
     } finally {
       setLoading(false);
     }
@@ -177,7 +191,6 @@ export default function ExpenseForm({ onExpenseAdded }) {
         </label>
         
         <div className="flex gap-3 items-center">
-          {/* Animated Microphone Toggle Button */}
           <button 
             type="button"
             onClick={toggleListening}
@@ -191,7 +204,6 @@ export default function ExpenseForm({ onExpenseAdded }) {
             {isListening ? <Disc3 className="w-5 h-5 animate-spin" /> : <Mic className="w-5 h-5" />}
           </button>
 
-          {/* Input Field */}
           <div className="relative flex-grow">
             <input 
               type="text" 
@@ -207,7 +219,6 @@ export default function ExpenseForm({ onExpenseAdded }) {
             />
           </div>
 
-          {/* Auto-Fill Button */}
           <button 
             type="button"
             onClick={handleAiFill}
@@ -224,7 +235,6 @@ export default function ExpenseForm({ onExpenseAdded }) {
       <h2 className="text-xl font-semibold mb-5 text-gray-800">Submit Claim</h2>
       {error && <p className="text-red-500 mb-4 text-sm font-medium bg-red-50 p-3 rounded border border-red-200">{error}</p>}
       
-      {/* Standard Form */}
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <input type="date" required
@@ -254,7 +264,6 @@ export default function ExpenseForm({ onExpenseAdded }) {
           onChange={(e) => setFormData({...formData, description: e.target.value})}
         />
 
-        {/* Drag & Drop Receipt Upload */}
         <div className="pt-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">Upload Receipt (Optional)</label>
           <div 
@@ -299,7 +308,6 @@ export default function ExpenseForm({ onExpenseAdded }) {
           </div>
         </div>
 
-        {/* Dual Action Buttons */}
         <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
           <button
             type="submit"

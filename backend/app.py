@@ -65,7 +65,7 @@ def smart_capture():
 @app.route('/expenses', methods=['POST'])
 def create_expense():
     data = request.json
-    if not all(k in data for k in ("date", "category", "amount")):
+    if not all(k in data for k in ("date", "category", "amount", "user_id")):
         return jsonify({"error": "Missing mandatory fields"}), 400
     try:
         amount = float(data['amount'])
@@ -75,6 +75,7 @@ def create_expense():
         return jsonify({"error": "Amount must be numeric"}), 400
 
     new_expense = Expense(
+        user_id=data['user_id'],
         date=data['date'],
         category=data['category'],
         amount=amount,
@@ -87,7 +88,11 @@ def create_expense():
 
 @app.route('/expenses', methods=['GET'])
 def get_expenses():
-    expenses = Expense.query.order_by(Expense.created_at.desc()).all()
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Unauthorized: No user_id provided"}), 401
+    
+    expenses = Expense.query.filter_by(user_id=user_id).order_by(Expense.created_at.desc()).all()
     return jsonify([expense.to_dict() for expense in expenses]), 200
 
 @app.route('/expenses/<int:id>', methods=['PATCH'])

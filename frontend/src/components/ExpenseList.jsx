@@ -1,16 +1,31 @@
+import { useAuth } from '../context/AuthContext'; 
+
 export default function ExpenseList({ expenses, onStatusChange }) {
+  const { user } = useAuth(); 
+
   const handleUpdate = async (id, newStatus) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/expenses/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (response.ok) {
-        onStatusChange(id, newStatus);
+    if (user) {
+      
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/expenses/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        if (response.ok) {
+          onStatusChange(id, newStatus);
+        }
+      } catch (err) {
+        console.error("Failed to update status");
       }
-    } catch (err) {
-      console.error("Failed to update status");
+    } else {
+      
+      const guestExpenses = JSON.parse(localStorage.getItem('guest_expenses') || '[]');
+      const updatedExpenses = guestExpenses.map(exp => 
+        exp.id === id ? { ...exp, status: newStatus } : exp
+      );
+      localStorage.setItem('guest_expenses', JSON.stringify(updatedExpenses));
+      onStatusChange(id, newStatus);
     }
   };
 
@@ -45,7 +60,7 @@ export default function ExpenseList({ expenses, onStatusChange }) {
                 <td className="p-4 text-sm">{exp.date}</td>
                 <td className="p-4 text-sm font-medium">{exp.category}</td>
                 <td className="p-4 text-sm text-gray-600">{exp.description}</td>
-                <td className="p-4 text-sm font-bold">₹{exp.amount.toFixed(2)}</td>
+                <td className="p-4 text-sm font-bold">₹{Number(exp.amount).toFixed(2)}</td>
                 <td className="p-4">
                   <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(exp.status)}`}>
                     {exp.status}

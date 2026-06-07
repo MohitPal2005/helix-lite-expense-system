@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { X, EyeOff, Eye } from 'lucide-react';
 
@@ -9,26 +8,30 @@ export default function AuthModal() {
   const [password, setPassword] = useState('');
   const [institution, setInstitution] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState(''); // NEW: Handle Firebase errors
   
-  const { login, isAuthModalOpen, closeAuthModal } = useAuth();
-  const navigate = useNavigate();
+  const { loginWithEmail, registerWithEmail, loginWithGoogle, isAuthModalOpen, closeAuthModal } = useAuth();
 
-  // If the modal is set to closed, don't render anything
   if (!isAuthModalOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const extractedName = email.split('@')[0];
-    const displayName = extractedName.charAt(0).toUpperCase() + extractedName.slice(1);
+    setError(''); 
     
-    login({ 
-      name: displayName, 
-      email: email, 
-      institution: institution || 'Helix User',
-      role: 'Admin' 
-    });
-    
-    navigate('/app');
+    try {
+      if (isLogin) {
+        // Run Firebase Login
+        await loginWithEmail(email, password);
+      } else {
+        // Run Firebase Registration
+        const extractedName = email.split('@')[0];
+        const displayName = extractedName.charAt(0).toUpperCase() + extractedName.slice(1);
+        await registerWithEmail(email, password, institution || displayName);
+      }
+    } catch (err) {
+      // Show Firebase error beautifully in the UI
+      setError(err.message.replace('Firebase: ', '').replace(/\(auth.*\)\./, ''));
+    }
   };
 
   // SVG Icons
@@ -54,13 +57,9 @@ export default function AuthModal() {
   );
 
   return (
-    // The fixed, full-screen background with a dark blur (z-index 100 to sit above navbars)
     <div className="fixed inset-0 z-[100] bg-[#0B132B]/60 backdrop-blur-sm flex items-center justify-center p-4 font-sans animate-fade-in">
-      
-      {/* The Centered White Card */}
       <div className="max-w-[480px] w-full bg-white rounded-2xl shadow-2xl relative p-8 md:p-10">
         
-        {/* Close Button updates Global Context to hide the popup */}
         <button 
           onClick={closeAuthModal}
           className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors"
@@ -71,16 +70,22 @@ export default function AuthModal() {
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
           {isLogin ? 'Log in' : 'Create Account'}
         </h2>
-        <p className="text-sm text-gray-600 mb-8">
-          {isLogin ? 'New user ? ' : 'Already have an account ? '}
-          <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-blue-600 font-medium hover:underline">
+        <p className="text-sm text-gray-600 mb-6">
+          {isLogin ? 'New user? ' : 'Already have an account? '}
+          <button type="button" onClick={() => {setIsLogin(!isLogin); setError('');}} className="text-blue-600 font-medium hover:underline">
             {isLogin ? 'Register Now' : 'Log in'}
           </button>
         </p>
 
+        {/* Display Firebase Errors here */}
+        {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{error}</div>}
+
         {isLogin ? (
           <>
-            <button className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 mb-4">
+            <button 
+              onClick={loginWithGoogle}
+              className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 mb-4"
+            >
               <GoogleIcon /> Continue with Google
             </button>
             <div className="flex justify-center gap-4 mb-6">
@@ -94,8 +99,8 @@ export default function AuthModal() {
             </div>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm text-gray-800 mb-1">Username or Email</label>
-                <input type="text" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Username or Email" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#0e8a46] focus:border-[#0e8a46]" />
+                <label className="block text-sm text-gray-800 mb-1">Email</label>
+                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#0e8a46] focus:border-[#0e8a46]" />
               </div>
               <div>
                 <label className="block text-sm text-gray-800 mb-1">Password</label>
@@ -119,35 +124,36 @@ export default function AuthModal() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm text-gray-800 mb-1">Username or Email</label>
-              <input type="text" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Username or Email" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#0e8a46] focus:border-[#0e8a46]" />
+              <label className="block text-sm text-gray-800 mb-1">Full Name</label>
+              <input type="text" required value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="Enter Full name" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#0e8a46] focus:border-[#0e8a46]" />
             </div>
             <div>
-              <label className="block text-sm text-gray-800 mb-1">Password</label>
+              <label className="block text-sm text-gray-800 mb-1">Email</label>
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#0e8a46] focus:border-[#0e8a46]" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-800 mb-1">Password (Min 6 characters)</label>
               <div className="relative">
-                <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#0e8a46] focus:border-[#0e8a46]" />
+                <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" minLength="6" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#0e8a46] focus:border-[#0e8a46]" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-500 hover:text-gray-700">
                   {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                 </button>
               </div>
             </div>
-            <div>
-              <label className="block text-sm text-gray-800 mb-1">Full Name</label>
-              <input type="text" required value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="Enter Full name" className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#0e8a46] focus:border-[#0e8a46]" />
-            </div>
             <button type="submit" className="w-full bg-[#0e8a46] text-white py-3 mt-4 rounded-md font-bold text-lg hover:bg-[#0c7a3d] transition-colors">Sign Up</button>
+            
             <div className="flex items-center my-6">
               <div className="flex-1 border-t border-gray-200"></div>
               <span className="px-3 text-xs text-gray-400">or</span>
               <div className="flex-1 border-t border-gray-200"></div>
             </div>
-            <button className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 mb-4">
+            <button 
+              type="button"
+              onClick={loginWithGoogle}
+              className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 mb-4"
+            >
               <GoogleIcon /> Continue with Google
             </button>
-            <div className="flex justify-center gap-4">
-              <button type="button" className="p-2 border border-gray-200 rounded-full text-blue-600 hover:bg-blue-50"><FacebookIcon /></button>
-              <button type="button" className="p-2 border border-gray-200 rounded-full text-blue-700 hover:bg-blue-50"><LinkedinIcon /></button>
-            </div>
           </form>
         )}
       </div>
